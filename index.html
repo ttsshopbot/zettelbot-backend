@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MINI-APP by violencegetrich</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+
+<body>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title">
+      <h1>MINI-APP</h1>
+      <span>by violencegetrich</span>
+    </div>
+
+    <button id="themeToggle" class="theme-btn">🌙</button>
+  </div>
+
+  <!-- HAUPTBILD -->
+  <div class="glass-card">
+    <h2>Hauptbild</h2>
+    <input type="file" id="mainInput" accept="image/*" hidden>
+    <button class="glass-btn primary" onclick="mainInput.click()">Bild auswählen</button>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="glass-card">
+    <h2>Overlay</h2>
+    <input type="file" id="overlayInput" accept="image/*" hidden>
+    <button class="glass-btn outline" onclick="overlayInput.click()">Overlay auswählen</button>
+
+    <label>Rotation</label>
+    <input type="range" id="rotate" min="-180" max="180" value="0">
+
+    <label>Größe</label>
+    <input type="range" id="scale" min="0.1" max="2" step="0.01" value="1">
+  </div>
+
+  <!-- LIVE PREVIEW -->
+  <div class="glass-card">
+    <h2>Live Preview</h2>
+
+    <div class="preview-box">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <button class="glass-btn primary download" onclick="downloadImage()">
+      Bild herunterladen
+    </button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

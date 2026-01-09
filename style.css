@@ -1,0 +1,108 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(180deg,#f2f4f8,#e6ebf5);
+  color: #0f172a;
+}
+
+body.dark {
+  background: linear-gradient(180deg,#0b1220,#121826);
+  color: #f8fafc;
+}
+
+/* HEADER */
+.header {
+  max-width: 420px;
+  margin: 30px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  text-align: center;
+  flex: 1;
+}
+
+.title h1 {
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.title span {
+  font-size: 13px;
+  opacity: .6;
+}
+
+.theme-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* GLASS CARD */
+.glass-card {
+  max-width: 420px;
+  margin: 20px auto;
+  padding: 22px;
+  border-radius: 26px;
+  background: rgba(255,255,255,.25);
+  backdrop-filter: blur(22px);
+  box-shadow: 0 20px 50px rgba(0,0,0,.15);
+}
+
+body.dark .glass-card {
+  background: rgba(30,41,59,.4);
+}
+
+h2 {
+  margin-top: 0;
+}
+
+/* BUTTONS */
+.glass-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+.glass-btn.primary {
+  background: linear-gradient(180deg,#3b82f6,#2563eb);
+  color: white;
+}
+
+.glass-btn.outline {
+  background: rgba(255,255,255,.3);
+}
+
+body.dark .glass-btn.outline {
+  background: rgba(255,255,255,.08);
+}
+
+/* PREVIEW */
+.preview-box {
+  width: 100%;
+  margin: 15px 0 25px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+}
+
+canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* RANGE */
+input[type=range] {
+  width: 100%;
+}
+

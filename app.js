@@ -12,6 +12,42 @@ let scale = 1;
 const mainInput = document.getElementById("mainInput");
 const overlayInput = document.getElementById("overlayInput");
 
+/* ================================
+   NEU: WEISS → TRANSPARENT (NUR DAS)
+================================ */
+function removeWhiteBackground(img, callback) {
+  const tempCanvas = document.createElement("canvas");
+  const tempCtx = tempCanvas.getContext("2d");
+
+  tempCanvas.width = img.width;
+  tempCanvas.height = img.height;
+
+  tempCtx.drawImage(img, 0, 0);
+
+  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    const brightness = (r + g + b) / 3;
+
+    if (brightness > 235) {
+      data[i + 3] = 0; // transparent
+    }
+  }
+
+  tempCtx.putImageData(imageData, 0, 0);
+
+  const cleanedImg = new Image();
+  cleanedImg.onload = () => callback(cleanedImg);
+  cleanedImg.src = tempCanvas.toDataURL("image/png");
+}
+
+/* ================================ */
+
 mainInput.onchange = e => loadImage(e.target.files[0], img => {
   mainImg = img;
   canvas.width = img.width;
@@ -21,9 +57,12 @@ mainInput.onchange = e => loadImage(e.target.files[0], img => {
   draw();
 });
 
+/* HIER EINZIGE ÄNDERUNG */
 overlayInput.onchange = e => loadImage(e.target.files[0], img => {
-  overlayImg = img;
-  draw();
+  removeWhiteBackground(img, cleaned => {
+    overlayImg = cleaned;
+    draw();
+  });
 });
 
 function loadImage(file, cb) {
@@ -64,7 +103,7 @@ function draw() {
 /* DRAG */
 let dragging = false;
 
-canvas.addEventListener("pointerdown", e => {
+canvas.addEventListener("pointerdown", () => {
   dragging = true;
 });
 

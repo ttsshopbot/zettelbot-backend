@@ -12,42 +12,6 @@ let scale = 1;
 const mainInput = document.getElementById("mainInput");
 const overlayInput = document.getElementById("overlayInput");
 
-/* ================================
-   NEU: WEISS → TRANSPARENT (NUR DAS)
-================================ */
-function removeWhiteBackground(img, callback) {
-  const tempCanvas = document.createElement("canvas");
-  const tempCtx = tempCanvas.getContext("2d");
-
-  tempCanvas.width = img.width;
-  tempCanvas.height = img.height;
-
-  tempCtx.drawImage(img, 0, 0);
-
-  const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const data = imageData.data;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-
-    const brightness = (r + g + b) / 3;
-
-    if (brightness > 235) {
-      data[i + 3] = 0; // transparent
-    }
-  }
-
-  tempCtx.putImageData(imageData, 0, 0);
-
-  const cleanedImg = new Image();
-  cleanedImg.onload = () => callback(cleanedImg);
-  cleanedImg.src = tempCanvas.toDataURL("image/png");
-}
-
-/* ================================ */
-
 mainInput.onchange = e => loadImage(e.target.files[0], img => {
   mainImg = img;
   canvas.width = img.width;
@@ -57,12 +21,9 @@ mainInput.onchange = e => loadImage(e.target.files[0], img => {
   draw();
 });
 
-/* HIER EINZIGE ÄNDERUNG */
 overlayInput.onchange = e => loadImage(e.target.files[0], img => {
-  removeWhiteBackground(img, cleaned => {
-    overlayImg = cleaned;
-    draw();
-  });
+  overlayImg = img;
+  draw();
 });
 
 function loadImage(file, cb) {
@@ -83,19 +44,45 @@ document.getElementById("scale").oninput = e => {
 
 function draw() {
   if (!mainImg) return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.drawImage(mainImg,0,0);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(mainImg, 0, 0);
 
   if (!overlayImg) return;
+
+  // 🔹 Offscreen Canvas für echte Transparenz
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = overlayImg.width;
+  tempCanvas.height = overlayImg.height;
+  const tctx = tempCanvas.getContext("2d");
+
+  tctx.drawImage(overlayImg, 0, 0);
+
+  const imgData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imgData.data;
+
+  // 🔥 Weiß + helles Papier KOMPLETT entfernen
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    // sehr aggressiver Weiß-Filter (Papier)
+    if (r > 230 && g > 230 && b > 230) {
+      data[i + 3] = 0; // transparent
+    }
+  }
+
+  tctx.putImageData(imgData, 0, 0);
 
   ctx.save();
   ctx.translate(overlayX, overlayY);
   ctx.rotate(rotation * Math.PI / 180);
   ctx.scale(scale, scale);
   ctx.drawImage(
-    overlayImg,
-    -overlayImg.width/2,
-    -overlayImg.height/2
+    tempCanvas,
+    -tempCanvas.width / 2,
+    -tempCanvas.height / 2
   );
   ctx.restore();
 }
@@ -103,9 +90,7 @@ function draw() {
 /* DRAG */
 let dragging = false;
 
-canvas.addEventListener("pointerdown", () => {
-  dragging = true;
-});
+canvas.addEventListener("pointerdown", () => dragging = true);
 
 canvas.addEventListener("pointermove", e => {
   if (!dragging) return;
@@ -118,7 +103,7 @@ canvas.addEventListener("pointermove", e => {
 canvas.addEventListener("pointerup", () => dragging = false);
 canvas.addEventListener("pointerleave", () => dragging = false);
 
-/* DOWNLOAD – FIXED FOR MOBILE */
+/* DOWNLOAD */
 function downloadImage() {
   canvas.toBlob(blob => {
     const url = URL.createObjectURL(blob);

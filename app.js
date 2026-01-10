@@ -9,6 +9,10 @@ let overlayY = 0;
 let rotation = 0;
 let scale = 1;
 
+/* ✅ NEU */
+let overlayOpacity = 1;   // Transparenz
+let overlayBlur = 0;      // Weichzeichnung
+
 const mainInput = document.getElementById("mainInput");
 const overlayInput = document.getElementById("overlayInput");
 
@@ -42,6 +46,23 @@ document.getElementById("scale").oninput = e => {
   draw();
 };
 
+/* ✅ NEU: Regler */
+const opacitySlider = document.getElementById("opacity");
+if (opacitySlider) {
+  opacitySlider.oninput = e => {
+    overlayOpacity = e.target.value;
+    draw();
+  };
+}
+
+const blurSlider = document.getElementById("blur");
+if (blurSlider) {
+  blurSlider.oninput = e => {
+    overlayBlur = e.target.value;
+    draw();
+  };
+}
+
 function draw() {
   if (!mainImg) return;
 
@@ -50,7 +71,7 @@ function draw() {
 
   if (!overlayImg) return;
 
-  // 🔹 Offscreen Canvas für echte Transparenz
+  // 🔹 Offscreen Canvas (Papier entfernen)
   const tempCanvas = document.createElement("canvas");
   tempCanvas.width = overlayImg.width;
   tempCanvas.height = overlayImg.height;
@@ -61,15 +82,14 @@ function draw() {
   const imgData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
 
-  // 🔥 Weiß + helles Papier KOMPLETT entfernen
+  // 🔥 Weißes Papier aggressiv entfernen
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
 
-    // sehr aggressiver Weiß-Filter (Papier)
     if (r > 230 && g > 230 && b > 230) {
-      data[i + 3] = 0; // transparent
+      data[i + 3] = 0;
     }
   }
 
@@ -79,12 +99,22 @@ function draw() {
   ctx.translate(overlayX, overlayY);
   ctx.rotate(rotation * Math.PI / 180);
   ctx.scale(scale, scale);
+
+  /* ✅ NEU */
+  ctx.globalAlpha = overlayOpacity;
+  ctx.filter = `blur(${overlayBlur}px)`;
+
   ctx.drawImage(
     tempCanvas,
     -tempCanvas.width / 2,
     -tempCanvas.height / 2
   );
+
   ctx.restore();
+
+  /* Reset */
+  ctx.globalAlpha = 1;
+  ctx.filter = "none";
 }
 
 /* DRAG */
@@ -120,3 +150,4 @@ const themeBtn = document.getElementById("themeToggle");
 themeBtn.onclick = () => {
   document.body.classList.toggle("dark");
 };
+

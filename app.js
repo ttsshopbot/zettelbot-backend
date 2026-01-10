@@ -9,9 +9,8 @@ let overlayY = 0;
 let rotation = 0;
 let scale = 1;
 
-/* ✅ NEU */
-let overlayOpacity = 1;   // Transparenz
-let overlayBlur = 0;      // Weichzeichnung
+// 🔹 NEU
+let blurAmount = 0;
 
 const mainInput = document.getElementById("mainInput");
 const overlayInput = document.getElementById("overlayInput");
@@ -36,32 +35,23 @@ function loadImage(file, cb) {
   img.src = URL.createObjectURL(file);
 }
 
+// 🔹 Rotation
 document.getElementById("rotate").oninput = e => {
   rotation = e.target.value;
   draw();
 };
 
+// 🔹 Größe
 document.getElementById("scale").oninput = e => {
   scale = e.target.value;
   draw();
 };
 
-/* ✅ NEU: Regler */
-const opacitySlider = document.getElementById("opacity");
-if (opacitySlider) {
-  opacitySlider.oninput = e => {
-    overlayOpacity = e.target.value;
-    draw();
-  };
-}
-
-const blurSlider = document.getElementById("blur");
-if (blurSlider) {
-  blurSlider.oninput = e => {
-    overlayBlur = e.target.value;
-    draw();
-  };
-}
+// 🔹 BLUR-REGLER (NEU)
+document.getElementById("blur").oninput = e => {
+  blurAmount = e.target.value;
+  draw();
+};
 
 function draw() {
   if (!mainImg) return;
@@ -71,7 +61,7 @@ function draw() {
 
   if (!overlayImg) return;
 
-  // 🔹 Offscreen Canvas (Papier entfernen)
+  // 🔹 Offscreen Canvas für echte Transparenz
   const tempCanvas = document.createElement("canvas");
   tempCanvas.width = overlayImg.width;
   tempCanvas.height = overlayImg.height;
@@ -82,7 +72,7 @@ function draw() {
   const imgData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
 
-  // 🔥 Weißes Papier aggressiv entfernen
+  // 🔥 Weiß + Papier aggressiv entfernen
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
@@ -100,9 +90,8 @@ function draw() {
   ctx.rotate(rotation * Math.PI / 180);
   ctx.scale(scale, scale);
 
-  /* ✅ NEU */
-  ctx.globalAlpha = overlayOpacity;
-  ctx.filter = `blur(${overlayBlur}px)`;
+  // 🔹 HIER WIRKT DER BLUR (WICHTIG)
+  ctx.filter = `blur(${blurAmount}px)`;
 
   ctx.drawImage(
     tempCanvas,
@@ -112,8 +101,7 @@ function draw() {
 
   ctx.restore();
 
-  /* Reset */
-  ctx.globalAlpha = 1;
+  // 🔹 Filter zurücksetzen (SEHR wichtig)
   ctx.filter = "none";
 }
 
@@ -150,4 +138,3 @@ const themeBtn = document.getElementById("themeToggle");
 themeBtn.onclick = () => {
   document.body.classList.toggle("dark");
 };
-

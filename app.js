@@ -8,8 +8,8 @@ let overlayX = 0;
 let overlayY = 0;
 let rotation = 0;
 let scale = 1;
-let opacity = 1;     // 🔹 Transparenz
-let blur = 0;        // 🔹 Blur
+let blurAmount = 0;
+let paperStrength = 0.4;
 
 const mainInput = document.getElementById("mainInput");
 const overlayInput = document.getElementById("overlayInput");
@@ -34,7 +34,6 @@ function loadImage(file, cb) {
   img.src = URL.createObjectURL(file);
 }
 
-// 🔹 Regler
 document.getElementById("rotate").oninput = e => {
   rotation = e.target.value;
   draw();
@@ -45,13 +44,13 @@ document.getElementById("scale").oninput = e => {
   draw();
 };
 
-document.getElementById("opacity").oninput = e => {
-  opacity = e.target.value;
+document.getElementById("blur").oninput = e => {
+  blurAmount = e.target.value;
   draw();
 };
 
-document.getElementById("blur").oninput = e => {
-  blur = e.target.value;
+document.getElementById("paper").oninput = e => {
+  paperStrength = e.target.value;
   draw();
 };
 
@@ -63,13 +62,13 @@ function draw() {
 
   if (!overlayImg) return;
 
-  // 🔹 Offscreen Canvas (Papier entfernen)
   const tempCanvas = document.createElement("canvas");
   tempCanvas.width = overlayImg.width;
   tempCanvas.height = overlayImg.height;
   const tctx = tempCanvas.getContext("2d");
 
   tctx.drawImage(overlayImg, 0, 0);
+
   const imgData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
 
@@ -78,28 +77,30 @@ function draw() {
     const g = data[i + 1];
     const b = data[i + 2];
 
+    // Weißes Papier entfernen
     if (r > 230 && g > 230 && b > 230) {
       data[i + 3] = 0;
+    } else {
+      // Papier-Einbrennen
+      const darkness = (r + g + b) / 3 / 255;
+      data[i] *= (1 - paperStrength * (1 - darkness));
+      data[i + 1] *= (1 - paperStrength * (1 - darkness));
+      data[i + 2] *= (1 - paperStrength * (1 - darkness));
     }
   }
 
   tctx.putImageData(imgData, 0, 0);
 
-  // 🔥 HIER WAR DER FEHLER – jetzt korrekt
   ctx.save();
   ctx.translate(overlayX, overlayY);
   ctx.rotate(rotation * Math.PI / 180);
   ctx.scale(scale, scale);
-
-  ctx.globalAlpha = opacity;           // ✅ Transparenz wirkt
-  ctx.filter = `blur(${blur}px)`;      // ✅ Blur wirkt
-
+  ctx.filter = `blur(${blurAmount}px)`;
   ctx.drawImage(
     tempCanvas,
     -tempCanvas.width / 2,
     -tempCanvas.height / 2
   );
-
   ctx.restore();
 }
 
@@ -107,6 +108,7 @@ function draw() {
 let dragging = false;
 
 canvas.addEventListener("pointerdown", () => dragging = true);
+
 canvas.addEventListener("pointermove", e => {
   if (!dragging) return;
   const rect = canvas.getBoundingClientRect();
@@ -114,6 +116,7 @@ canvas.addEventListener("pointermove", e => {
   overlayY = (e.clientY - rect.top) * (canvas.height / rect.height);
   draw();
 });
+
 canvas.addEventListener("pointerup", () => dragging = false);
 canvas.addEventListener("pointerleave", () => dragging = false);
 

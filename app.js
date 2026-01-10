@@ -8,8 +8,9 @@ let overlayX = 0;
 let overlayY = 0;
 let rotation = 0;
 let scale = 1;
-let blurAmount = 0;
-let paperStrength = 0.4;
+let opacity = 1;
+let blur = 0;
+let burn = 0;
 
 const mainInput = document.getElementById("mainInput");
 const overlayInput = document.getElementById("overlayInput");
@@ -35,22 +36,27 @@ function loadImage(file, cb) {
 }
 
 document.getElementById("rotate").oninput = e => {
-  rotation = e.target.value;
+  rotation = +e.target.value;
   draw();
 };
 
 document.getElementById("scale").oninput = e => {
-  scale = e.target.value;
+  scale = +e.target.value;
+  draw();
+};
+
+document.getElementById("opacity").oninput = e => {
+  opacity = +e.target.value;
   draw();
 };
 
 document.getElementById("blur").oninput = e => {
-  blurAmount = e.target.value;
+  blur = +e.target.value;
   draw();
 };
 
-document.getElementById("paper").oninput = e => {
-  paperStrength = e.target.value;
+document.getElementById("burn").oninput = e => {
+  burn = +e.target.value;
   draw();
 };
 
@@ -62,13 +68,13 @@ function draw() {
 
   if (!overlayImg) return;
 
+  // Offscreen Canvas → Weiß entfernen
   const tempCanvas = document.createElement("canvas");
   tempCanvas.width = overlayImg.width;
   tempCanvas.height = overlayImg.height;
   const tctx = tempCanvas.getContext("2d");
 
   tctx.drawImage(overlayImg, 0, 0);
-
   const imgData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
   const data = imgData.data;
 
@@ -76,32 +82,40 @@ function draw() {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-
-    // Weißes Papier entfernen
     if (r > 230 && g > 230 && b > 230) {
       data[i + 3] = 0;
-    } else {
-      // Papier-Einbrennen
-      const darkness = (r + g + b) / 3 / 255;
-      data[i] *= (1 - paperStrength * (1 - darkness));
-      data[i + 1] *= (1 - paperStrength * (1 - darkness));
-      data[i + 2] *= (1 - paperStrength * (1 - darkness));
     }
   }
-
   tctx.putImageData(imgData, 0, 0);
 
   ctx.save();
   ctx.translate(overlayX, overlayY);
   ctx.rotate(rotation * Math.PI / 180);
   ctx.scale(scale, scale);
-  ctx.filter = `blur(${blurAmount}px)`;
+
+  ctx.globalAlpha = opacity;
+  ctx.filter = `blur(${blur}px)`;
+
+  // Papier-Einbrennen (Multiply + minimaler Versatz)
+  if (burn > 0) {
+    ctx.globalCompositeOperation = "multiply";
+    ctx.drawImage(
+      tempCanvas,
+      -tempCanvas.width / 2 + burn,
+      -tempCanvas.height / 2 + burn
+    );
+    ctx.globalCompositeOperation = "source-over";
+  }
+
   ctx.drawImage(
     tempCanvas,
     -tempCanvas.width / 2,
     -tempCanvas.height / 2
   );
+
   ctx.restore();
+  ctx.filter = "none";
+  ctx.globalAlpha = 1;
 }
 
 /* DRAG */
@@ -133,8 +147,7 @@ function downloadImage() {
 }
 
 /* DARK MODE */
-const themeBtn = document.getElementById("themeToggle");
-themeBtn.onclick = () => {
+document.getElementById("themeToggle").onclick = () => {
   document.body.classList.toggle("dark");
 };
 

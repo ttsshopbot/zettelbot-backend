@@ -9,8 +9,8 @@ let overlayY = 0;
 let rotation = 0;
 let scale = 1;
 let opacity = 1;
-let blur = 0;
-let burn = 0;
+let blurAmount = 0;
+let burnAmount = 0;
 
 const mainInput = document.getElementById("mainInput");
 const overlayInput = document.getElementById("overlayInput");
@@ -35,119 +35,96 @@ function loadImage(file, cb) {
   img.src = URL.createObjectURL(file);
 }
 
-document.getElementById("rotate").oninput = e => {
-  rotation = +e.target.value;
-  draw();
-};
-
-document.getElementById("scale").oninput = e => {
-  scale = +e.target.value;
-  draw();
-};
-
-document.getElementById("opacity").oninput = e => {
-  opacity = +e.target.value;
-  draw();
-};
-
-document.getElementById("blur").oninput = e => {
-  blur = +e.target.value;
-  draw();
-};
-
-document.getElementById("burn").oninput = e => {
-  burn = +e.target.value;
-  draw();
-};
+/* REGELER */
+rotate.oninput = e => { rotation = e.target.value; draw(); };
+scaleInput = document.getElementById("scale");
+scaleInput.oninput = e => { scale = e.target.value; draw(); };
+opacityInput = document.getElementById("opacity");
+opacityInput.oninput = e => { opacity = e.target.value; draw(); };
+blurInput = document.getElementById("blur");
+blurInput.oninput = e => { blurAmount = e.target.value; draw(); };
+burnInput = document.getElementById("burn");
+burnInput.oninput = e => { burnAmount = e.target.value; draw(); };
 
 function draw() {
   if (!mainImg) return;
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(mainImg, 0, 0);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(mainImg,0,0);
 
   if (!overlayImg) return;
 
-  // Offscreen Canvas → Weiß entfernen
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = overlayImg.width;
-  tempCanvas.height = overlayImg.height;
-  const tctx = tempCanvas.getContext("2d");
+  const temp = document.createElement("canvas");
+  temp.width = overlayImg.width;
+  temp.height = overlayImg.height;
+  const tctx = temp.getContext("2d");
 
-  tctx.drawImage(overlayImg, 0, 0);
-  const imgData = tctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const data = imgData.data;
+  // BLUR
+  tctx.filter = `blur(${blurAmount}px)`;
+  tctx.drawImage(overlayImg,0,0);
+  tctx.filter = "none";
 
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
+  const imgData = tctx.getImageData(0,0,temp.width,temp.height);
+  const d = imgData.data;
+
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i];
+    const g = d[i+1];
+    const b = d[i+2];
+
+    // Weiß entfernen
     if (r > 230 && g > 230 && b > 230) {
-      data[i + 3] = 0;
+      d[i+3] = 0;
+      continue;
+    }
+
+    // Transparenz
+    d[i+3] *= opacity;
+
+    // Papier-Einbrennen (Fakecheck-Look)
+    if (burnAmount > 0) {
+      const noise = (Math.random() - 0.5) * 40 * burnAmount;
+      d[i] += noise;
+      d[i+1] += noise;
+      d[i+2] += noise;
     }
   }
-  tctx.putImageData(imgData, 0, 0);
+
+  tctx.putImageData(imgData,0,0);
 
   ctx.save();
-  ctx.translate(overlayX, overlayY);
-  ctx.rotate(rotation * Math.PI / 180);
-  ctx.scale(scale, scale);
-
-  ctx.globalAlpha = opacity;
-  ctx.filter = `blur(${blur}px)`;
-
-  // Papier-Einbrennen (Multiply + minimaler Versatz)
-  if (burn > 0) {
-    ctx.globalCompositeOperation = "multiply";
-    ctx.drawImage(
-      tempCanvas,
-      -tempCanvas.width / 2 + burn,
-      -tempCanvas.height / 2 + burn
-    );
-    ctx.globalCompositeOperation = "source-over";
-  }
-
-  ctx.drawImage(
-    tempCanvas,
-    -tempCanvas.width / 2,
-    -tempCanvas.height / 2
-  );
-
+  ctx.translate(overlayX,overlayY);
+  ctx.rotate(rotation * Math.PI/180);
+  ctx.scale(scale,scale);
+  ctx.drawImage(temp,-temp.width/2,-temp.height/2);
   ctx.restore();
-  ctx.filter = "none";
-  ctx.globalAlpha = 1;
 }
 
 /* DRAG */
 let dragging = false;
-
-canvas.addEventListener("pointerdown", () => dragging = true);
-
-canvas.addEventListener("pointermove", e => {
-  if (!dragging) return;
-  const rect = canvas.getBoundingClientRect();
-  overlayX = (e.clientX - rect.left) * (canvas.width / rect.width);
-  overlayY = (e.clientY - rect.top) * (canvas.height / rect.height);
+canvas.addEventListener("pointerdown",()=>dragging=true);
+canvas.addEventListener("pointerup",()=>dragging=false);
+canvas.addEventListener("pointerleave",()=>dragging=false);
+canvas.addEventListener("pointermove",e=>{
+  if(!dragging) return;
+  const r = canvas.getBoundingClientRect();
+  overlayX = (e.clientX - r.left) * (canvas.width / r.width);
+  overlayY = (e.clientY - r.top) * (canvas.height / r.height);
   draw();
 });
 
-canvas.addEventListener("pointerup", () => dragging = false);
-canvas.addEventListener("pointerleave", () => dragging = false);
-
 /* DOWNLOAD */
 function downloadImage() {
-  canvas.toBlob(blob => {
-    const url = URL.createObjectURL(blob);
+  canvas.toBlob(b=>{
     const a = document.createElement("a");
-    a.href = url;
+    a.href = URL.createObjectURL(b);
     a.download = "final.png";
     a.click();
-    URL.revokeObjectURL(url);
-  }, "image/png", 1);
+  });
 }
 
 /* DARK MODE */
-document.getElementById("themeToggle").onclick = () => {
+themeToggle.onclick = () => {
   document.body.classList.toggle("dark");
 };
 
